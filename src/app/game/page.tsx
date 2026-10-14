@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import styles from "./page.module.css";
 
 type Team = 0 | 1 | 2 | 3;
-type Terrain = "water" | "grass" | "bridge";
+type Terrain = "grass" | "water" | "bridge";
 
 type Tile = {
       x: number;
@@ -26,91 +26,95 @@ type Castle = {
 type Soldier = {
       id: number;
       team: Team;
+      target: Team;
       x: number;
       y: number;
       hp: number;
-      target: Team;
       path: number[];
       cooldown: number;
+      delay: number;
 };
 
 type World = {
       tiles: Tile[];
       castles: Castle[];
       soldiers: Soldier[];
+      running: boolean;
+      result: "victory" | "defeat" | null;
+      selected: Team;
+      hover: Team | null;
+      speed: number;
       time: number;
       recruitClock: number;
       aiClock: number;
       nextId: number;
-      running: boolean;
-      selected: Team;
 };
 
 type Status = {
-      time: number;
       running: boolean;
-      selected: Team;
+      result: World["result"];
+      speed: number;
+      time: number;
       castles: Castle[];
+      selected: Team;
+      deployed: number;
 };
 
-const SIZE = 21;
 const WIDTH = 1100;
-const HEIGHT = 700;
+const HEIGHT = 740;
+const SIZE = 21;
 const TILE_W = 46;
 const TILE_H = 23;
-const ORIGIN_X = WIDTH / 2;
-const ORIGIN_Y = 105;
 
 const KINGDOMS = [
-      { name: "청람 왕국", color: "#588ee7", dark: "#294a8d" },
-      { name: "홍염 왕국", color: "#df6758", dark: "#8d382f" },
-      { name: "황금 왕국", color: "#e0bd5b", dark: "#927333" },
-      { name: "녹림 왕국", color: "#78b36b", dark: "#41683a" },
+      { name: "청람", color: "#67a9df", dark: "#345a83" },
+      { name: "홍염", color: "#d78066", dark: "#854739" },
+      { name: "황금", color: "#d8bd69", dark: "#887341" },
+      { name: "녹림", color: "#88b46b", dark: "#4d7042" },
 ] as const;
 
 function project(x: number, y: number) {
       return {
-            x: ORIGIN_X + (x - y) * TILE_W / 2,
-            y: ORIGIN_Y + (x + y) * TILE_H / 2,
+            x: WIDTH / 2 + (x - y) * TILE_W / 2,
+            y: 175 + (x + y) * TILE_H / 2,
       };
 }
 
 function makeWorld(): World {
       const tiles: Tile[] = [];
+      const positions = [
+            [4, 15],
+            [5, 5],
+            [15, 15],
+            [16, 5],
+      ];
 
       for (let y = 0; y < SIZE; y += 1) {
             for (let x = 0; x < SIZE; x += 1) {
-                  const west = x >= 2 && x <= 7;
-                  const east = x >= 13 && x <= 18;
-                  const north = y >= 2 && y <= 7;
-                  const south = y >= 13 && y <= 18;
-
-                  const island = (west || east) && (north || south);
+                  const west = x >= 2 && x <= 8;
+                  const east = x >= 12 && x <= 18;
+                  const north = y >= 2 && y <= 8;
+                  const south = y >= 12 && y <= 18;
                   const center = x >= 9 && x <= 11 && y >= 9 && y <= 11;
 
-                  const horizontal =
-                        (y === 5 || y === 15) && x >= 5 && x <= 15;
+                  const island = (west || east) && (north || south);
+                  const bridge =
+                        ((y === 5 || y === 15) && x >= 8 && x <= 12) ||
+                        ((x === 5 || x === 15) && y >= 8 && y <= 12) ||
+                        (x === 10 && y >= 5 && y <= 15) ||
+                        (y === 10 && x >= 5 && x <= 15);
 
-                  const vertical =
-                        (x === 5 || x === 15) && y >= 5 && y <= 15;
+                  const terrain: Terrain = island || center
+                        ? "grass"
+                        : bridge
+                              ? "bridge"
+                              : "water";
 
-                  const middle =
-                        (y === 10 && x >= 5 && x <= 15) ||
-                        (x === 10 && y >= 5 && y <= 15);
+                  const nearCastle = positions.some(
+                        ([cx, cy]) => Math.hypot(cx - x, cy - y) < 2.4,
+                  );
 
-                  const terrain: Terrain =
-                        island || center
-                              ? "grass"
-                              : horizontal || vertical || middle
-                                    ? "bridge"
-                                    : "water";
-
-                  const nearCastle = [
-                        [4, 4],
-                        [16, 4],
-                        [4, 16],
-                        [16, 16],
-                  ].some(([cx, cy]) => Math.abs(cx - x) + Math.abs(cy - y) <= 2);
+                  const road = x === 5 || x === 15 || y === 5 || y === 15;
 
                   tiles.push({
                         x,
@@ -118,46 +122,58 @@ function makeWorld(): World {
                         terrain,
                         tree:
                               terrain === "grass" &&
+                              !center &&
                               !nearCastle &&
-                              x !== 5 &&
-                              x !== 15 &&
-                              y !== 5 &&
-                              y !== 15 &&
-                              (x * 17 + y * 29) % 5 < 2,
+                              !road &&
+                              (x * 13 + y * 19) % 7 < 3,
                   });
             }
       }
 
-      const castles: Castle[] = [
-            { team: 0, x: 4, y: 4, hp: 100, reserve: 12 },
-            { team: 1, x: 16, y: 4, hp: 100, reserve: 12 },
-            { team: 2, x: 4, y: 16, hp: 100, reserve: 12 },
-            { team: 3, x: 16, y: 16, hp: 100, reserve: 12 },
-      ];
-
       return {
             tiles,
-            castles,
+            castles: positions.map(([x, y], index) => ({
+                  team: index as Team,
+                  x,
+                  y,
+                  hp: 100,
+                  reserve: 18,
+            })),
             soldiers: [],
+            running: false,
+            result: null,
+            selected: 1,
+            hover: null,
+            speed: 1,
             time: 0,
             recruitClock: 0,
             aiClock: 0,
-            nextId: 0,
-            running: false,
-            selected: 1,
+            nextId: 1,
+      };
+}
+
+function snapshot(world: World): Status {
+      return {
+            running: world.running,
+            result: world.result,
+            speed: world.speed,
+            time: world.time,
+            castles: world.castles.map((castle) => ({ ...castle })),
+            selected: world.selected,
+            deployed: world.soldiers.filter((soldier) => soldier.team === 0).length,
       };
 }
 
 function findPath(world: World, from: Castle, to: Castle): number[] {
       const start = from.y * SIZE + from.x;
       const goal = to.y * SIZE + to.x;
-      const previous = new Int32Array(SIZE * SIZE).fill(-1);
+      const previous = new Array<number>(SIZE * SIZE).fill(-1);
       const queue = [start];
 
       previous[start] = start;
 
-      for (let cursor = 0; cursor < queue.length; cursor += 1) {
-            const id = queue[cursor];
+      for (let index = 0; index < queue.length; index += 1) {
+            const id = queue[index];
 
             if (id === goal) break;
 
@@ -175,7 +191,8 @@ function findPath(world: World, from: Castle, to: Castle): number[] {
                   if (
                         next < 0 ||
                         previous[next] !== -1 ||
-                        world.tiles[next].terrain === "water"
+                        world.tiles[next].terrain === "water" ||
+                        world.tiles[next].tree
                   ) {
                         continue;
                   }
@@ -202,7 +219,14 @@ function dispatch(world: World, team: Team, target: Team): boolean {
       const from = world.castles[team];
       const to = world.castles[target];
 
-      if (team === target || from.hp <= 0 || to.hp <= 0 || from.reserve < 1) {
+      if (
+            !world.running ||
+            world.result ||
+            team === target ||
+            from.hp <= 0 ||
+            to.hp <= 0 ||
+            from.reserve < 1
+      ) {
             return false;
       }
 
@@ -214,16 +238,17 @@ function dispatch(world: World, team: Team, target: Team): boolean {
 
       from.reserve -= count;
 
-      for (let i = 0; i < count; i += 1) {
+      for (let index = 0; index < count; index += 1) {
             world.soldiers.push({
                   id: world.nextId++,
                   team,
+                  target,
                   x: from.x,
                   y: from.y,
                   hp: 3,
-                  target,
                   path: [...path],
-                  cooldown: i * 0.14,
+                  cooldown: 0,
+                  delay: index * 0.22,
             });
       }
 
@@ -235,18 +260,18 @@ function updateWorld(world: World, dt: number) {
       world.recruitClock += dt;
       world.aiClock += dt;
 
-      if (world.recruitClock >= 3) {
-            world.recruitClock -= 3;
+      if (world.recruitClock >= 2.5) {
+            world.recruitClock -= 2.5;
 
             for (const castle of world.castles) {
                   if (castle.hp > 0) {
-                        castle.reserve = Math.min(30, castle.reserve + 1);
+                        castle.reserve = Math.min(36, castle.reserve + 1);
                   }
             }
       }
 
-      if (world.aiClock >= 9) {
-            world.aiClock = 0;
+      if (world.aiClock >= 8) {
+            world.aiClock -= 8;
 
             for (const team of [1, 2, 3] as const) {
                   const targets = world.castles.filter(
@@ -255,28 +280,81 @@ function updateWorld(world: World, dt: number) {
 
                   if (!targets.length) continue;
 
-                  const index = Math.floor(world.time / 9 + team) % targets.length;
+                  const targetIndex =
+                        (Math.floor(world.time / 8) + team) % targets.length;
 
-                  dispatch(world, team, targets[index].team);
+                  dispatch(world, team, targets[targetIndex].team);
             }
       }
 
       for (const soldier of world.soldiers) {
             if (soldier.hp <= 0) continue;
 
+            if (world.castles[soldier.team].hp <= 0) {
+                  soldier.hp = 0;
+                  continue;
+            }
+
+            if (soldier.delay > 0) {
+                  soldier.delay = Math.max(0, soldier.delay - dt);
+                  continue;
+            }
+
             soldier.cooldown = Math.max(0, soldier.cooldown - dt);
+
+            const target = world.castles[soldier.target];
+
+            if (target.hp <= 0) {
+                  const remaining = world.castles
+                        .filter((castle) => castle.team !== soldier.team && castle.hp > 0)
+                        .sort(
+                              (a, b) =>
+                                    Math.hypot(a.x - soldier.x, a.y - soldier.y) -
+                                    Math.hypot(b.x - soldier.x, b.y - soldier.y),
+                        );
+
+                  const nextTarget = remaining[0];
+
+                  if (!nextTarget) {
+                        soldier.hp = 0;
+                        continue;
+                  }
+
+                  // 다음 타일에 도착한 뒤 새 목적지로 경로를 계산합니다.
+                  if (soldier.path.length === 0) {
+                        const newPath = findPath(
+                              world,
+                              {
+                                    ...world.castles[soldier.team],
+                                    x: Math.round(soldier.x),
+                                    y: Math.round(soldier.y),
+                              },
+                              nextTarget,
+                        );
+
+                        if (!newPath.length) {
+                              soldier.hp = 0;
+                              continue;
+                        }
+
+                        soldier.target = nextTarget.team;
+                        soldier.path = newPath;
+                  }
+            }
 
             const enemy = world.soldiers.find(
                   (other) =>
                         other.hp > 0 &&
+                        other.delay <= 0 &&
+                        world.castles[other.team].hp > 0 &&
                         other.team !== soldier.team &&
-                        Math.hypot(other.x - soldier.x, other.y - soldier.y) < 0.65,
+                        Math.hypot(other.x - soldier.x, other.y - soldier.y) < 0.6,
             );
 
             if (enemy) {
                   if (soldier.cooldown === 0) {
                         enemy.hp -= 1;
-                        soldier.cooldown = 0.8;
+                        soldier.cooldown = 0.7;
                   }
 
                   continue;
@@ -290,7 +368,7 @@ function updateWorld(world: World, dt: number) {
                   const dx = tx - soldier.x;
                   const dy = ty - soldier.y;
                   const distance = Math.hypot(dx, dy);
-                  const step = dt * (1.15 + soldier.id % 3 * 0.08);
+                  const step = dt * 1.65;
 
                   if (distance <= step) {
                         soldier.x = tx;
@@ -304,17 +382,12 @@ function updateWorld(world: World, dt: number) {
                   continue;
             }
 
-            const target = world.castles[soldier.target];
+            const currentTarget = world.castles[soldier.target];
 
-            if (target.hp <= 0) {
-                  soldier.hp = 0;
-                  continue;
-            }
-
-            if (soldier.cooldown === 0) {
-                  target.hp = Math.max(0, target.hp - 2);
+            if (currentTarget.hp > 0 && soldier.cooldown === 0) {
+                  currentTarget.hp = Math.max(0, currentTarget.hp - 5);
                   soldier.hp -= 1;
-                  soldier.cooldown = 1;
+                  soldier.cooldown = 0.8;
             }
       }
 
@@ -322,7 +395,11 @@ function updateWorld(world: World, dt: number) {
             (soldier) => soldier.hp > 0 && world.castles[soldier.team].hp > 0,
       );
 
-      if (world.castles.filter((castle) => castle.hp > 0).length <= 1) {
+      if (world.castles[0].hp <= 0) {
+            world.result = "defeat";
+            world.running = false;
+      } else if (world.castles.slice(1).every((castle) => castle.hp <= 0)) {
+            world.result = "victory";
             world.running = false;
       }
 }
@@ -352,231 +429,289 @@ function diamond(
 ) {
       polygon(ctx, [
             [x, y],
-            [x + TILE_W / 2, y + TILE_H / 2],
-            [x, y + TILE_H],
-            [x - TILE_W / 2, y + TILE_H / 2],
+            [x + 23, y + 11.5],
+            [x, y + 23],
+            [x - 23, y + 11.5],
       ], color);
 }
 
-function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number, seed: number) {
-      const height = 23 + seed % 3 * 5;
+function createBackdrop(): HTMLCanvasElement {
+      const canvas = document.createElement("canvas");
 
-      ctx.fillStyle = "rgba(20, 31, 17, .25)";
-      ctx.beginPath();
-      ctx.ellipse(x + 3, y + 2, 12, 5, 0, 0, Math.PI * 2);
-      ctx.fill();
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
 
-      ctx.fillStyle = "#695031";
-      ctx.fillRect(x - 2, y - 11, 4, 13);
+      const ctx = canvas.getContext("2d");
 
-      for (let layer = 0; layer < 3; layer += 1) {
-            const bottom = y - 5 - layer * 7;
-            const half = 12 - layer * 2;
+      if (!ctx) return canvas;
 
-            polygon(ctx, [
-                  [x, y - height - layer * 2],
-                  [x + half, bottom],
-                  [x - half, bottom],
-            ], layer % 2 ? "#3b6038" : "#2c4c30");
+      const sky = ctx.createLinearGradient(0, 0, 0, 350);
 
-            polygon(ctx, [
-                  [x, y - height - layer * 2],
-                  [x, bottom - 2],
-                  [x - half, bottom],
-            ], "#537246");
-      }
-}
-
-function drawCastle(ctx: CanvasRenderingContext2D, castle: Castle, selected: boolean) {
-      const p = project(castle.x, castle.y);
-      const { color, dark } = KINGDOMS[castle.team];
-      const x = p.x;
-      const y = p.y + 10;
-
-      ctx.fillStyle = "rgba(17, 26, 19, .35)";
-      ctx.beginPath();
-      ctx.ellipse(x, y + 8, 34, 13, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (selected) {
-            ctx.strokeStyle = "#ffdd87";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.ellipse(x, y + 7, 39, 17, 0, 0, Math.PI * 2);
-            ctx.stroke();
-      }
-
-      if (castle.hp <= 0) {
-            ctx.fillStyle = "#777767";
-            ctx.fillRect(x - 21, y - 7, 42, 12);
-            ctx.fillStyle = "#52584c";
-            ctx.fillRect(x - 13, y - 15, 12, 10);
-            return;
-      }
-
-      polygon(ctx, [
-            [x - 29, y - 10],
-            [x, y - 25],
-            [x + 29, y - 10],
-            [x, y + 6],
-      ], "#b3b6a0");
-
-      polygon(ctx, [
-            [x - 29, y - 10],
-            [x, y + 6],
-            [x, y + 20],
-            [x - 29, y + 4],
-      ], "#6b7667");
-
-      polygon(ctx, [
-            [x, y + 6],
-            [x + 29, y - 10],
-            [x + 29, y + 4],
-            [x, y + 20],
-      ], "#909782");
-
-      ctx.fillStyle = "#a5ad98";
-      ctx.fillRect(x - 13, y - 38, 26, 35);
-      ctx.fillStyle = "#6e7c6d";
-      ctx.fillRect(x + 5, y - 38, 8, 35);
-
-      polygon(ctx, [
-            [x - 18, y - 36],
-            [x, y - 54],
-            [x + 18, y - 36],
-      ], color);
-
-      polygon(ctx, [
-            [x, y - 54],
-            [x + 18, y - 36],
-            [x, y - 36],
-      ], dark);
-
-      for (const offset of [-26, 18]) {
-            ctx.fillStyle = "#a8ae98";
-            ctx.fillRect(x + offset, y - 22, 10, 27);
-            ctx.fillStyle = "#c0c3ab";
-
-            for (let i = 0; i < 3; i += 1) {
-                  ctx.fillRect(x + offset + i * 4, y - 26, 3, 7);
-            }
-      }
-
-      ctx.fillStyle = "#343f36";
-      ctx.fillRect(x - 4, y - 3, 9, 17);
-      ctx.fillRect(x - 3, y - 29, 5, 8);
-
-      ctx.fillStyle = "#d5c799";
-      ctx.fillRect(x + 10, y - 67, 2, 28);
-
-      polygon(ctx, [
-            [x + 12, y - 67],
-            [x + 32, y - 63],
-            [x + 12, y - 55],
-      ], color);
-
-      ctx.fillStyle = "#25332c";
-      ctx.fillRect(x - 25, y + 28, 50, 5);
-      ctx.fillStyle = color;
-      ctx.fillRect(x - 25, y + 28, castle.hp / 2, 5);
-      ctx.font = "bold 11px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#fff3cd";
-      ctx.fillText(`${castle.reserve}`, x, y + 47);
-}
-
-function drawSoldier(ctx: CanvasRenderingContext2D, soldier: Soldier, time: number) {
-      const p = project(soldier.x, soldier.y);
-      const offset = (soldier.id % 3 - 1) * 4;
-      const x = p.x + offset;
-      const y = p.y + 10;
-      const walk = soldier.path.length ? Math.sin(time * 12 + soldier.id) * 2 : 0;
-
-      ctx.fillStyle = "rgba(20, 30, 19, .3)";
-      ctx.beginPath();
-      ctx.ellipse(x, y + 2, 6, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#302f27";
-      ctx.fillRect(x - 4, y - 3, 3, 5 + walk);
-      ctx.fillRect(x + 1, y - 3, 3, 5 - walk);
-
-      ctx.fillStyle = KINGDOMS[soldier.team].dark;
-      ctx.fillRect(x - 5, y - 13, 10, 11);
-      ctx.fillStyle = KINGDOMS[soldier.team].color;
-      ctx.fillRect(x - 5, y - 13, 6, 8);
-
-      ctx.fillStyle = "#d7bb8d";
-      ctx.fillRect(x - 3, y - 19, 6, 6);
-      ctx.fillStyle = "#c9cfbe";
-      ctx.fillRect(x - 4, y - 21, 8, 4);
-      ctx.fillStyle = "#68796c";
-      ctx.fillRect(x + 2, y - 21, 2, 6);
-
-      ctx.fillStyle = "#c8cfc5";
-      ctx.fillRect(x + 7, y - 20, 2, 13);
-      ctx.fillStyle = "#715534";
-      ctx.fillRect(x + 6, y - 8, 4, 2);
-}
-
-function render(ctx: CanvasRenderingContext2D, world: World) {
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-      const sky = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-      sky.addColorStop(0, "#9dad9d");
-      sky.addColorStop(0.35, "#465e53");
-      sky.addColorStop(0.7, "#1a2c29");
-      sky.addColorStop(1, "#101b1c");
+      sky.addColorStop(0, "#e3ece4");
+      sky.addColorStop(0.3, "#acbeb4");
+      sky.addColorStop(1, "#354e43");
 
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
       for (let layer = 0; layer < 3; layer += 1) {
-            const points = [[0, 400]];
+            const base = 230 + layer * 60;
 
-            for (let x = 0; x <= WIDTH + 60; x += 55) {
-                  const y =
-                        100 + layer * 53 +
-                        Math.sin(x * 0.015 + layer * 4) * 32 +
-                        Math.cos(x * 0.039 + layer) * 29;
+            for (let index = -1; index < 12; index += 1) {
+                  const x = index * 125 + layer * 43;
+                  const peak = 48 + layer * 43 + Math.sin(index * 4.8) * 28;
 
-                  points.push([x, y]);
+                  polygon(ctx, [
+                        [x - 100, base + 100],
+                        [x - 45, peak + 47],
+                        [x - 19, peak + 39],
+                        [x, peak],
+                        [x + 30, peak + 12],
+                        [x + 47, peak + 74],
+                        [x + 120, base + 100],
+                  ], ["#7d9185", "#5c7566", "#3b5447"][layer]);
+
+                  polygon(ctx, [
+                        [x - 100, base + 100],
+                        [x - 45, peak + 47],
+                        [x - 19, peak + 39],
+                        [x, peak],
+                        [x - 9, peak + 78],
+                        [x - 43, peak + 107],
+                        [x - 35, base + 65],
+                  ], ["#d1d3be", "#b8baa2", "#999e85"][layer]);
+
+                  for (let ridge = 0; ridge < 5; ridge += 1) {
+                        const rx = x - 37 + ridge * 14;
+
+                        polygon(ctx, [
+                              [rx, peak + 54 + ridge * 9],
+                              [rx - 17, base + 54],
+                              [rx + 4, base + 19],
+                        ], layer === 2 ? "#66745d" : "#92a18d");
+                  }
             }
-
-            points.push([WIDTH, 440]);
-
-            polygon(ctx, points, ["#7c9080", "#61786a", "#3b574b"][layer]);
       }
 
-      ctx.fillStyle = "rgba(0, 0, 0, .28)";
+      const shadow = ctx.createLinearGradient(0, 285, 0, 545);
+
+      shadow.addColorStop(0, "rgba(0, 0, 0, 0)");
+      shadow.addColorStop(1, "#000");
+
+      ctx.fillStyle = shadow;
+      ctx.fillRect(0, 285, WIDTH, HEIGHT - 285);
+
+      return canvas;
+}
+
+function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number) {
+      ctx.fillStyle = "#473c29";
+      ctx.fillRect(x - 2, y - 10, 4, 15);
+
+      for (let layer = 0; layer < 3; layer += 1) {
+            const half = 13 - layer * 3;
+            const bottom = y - layer * 9;
+
+            polygon(ctx, [
+                  [x, bottom - 23],
+                  [x + half, bottom],
+                  [x - half, bottom],
+            ], "#263d2b");
+
+            polygon(ctx, [
+                  [x, bottom - 23],
+                  [x, bottom - 2],
+                  [x - half, bottom],
+            ], "#526743");
+      }
+}
+
+function drawCastle(
+      ctx: CanvasRenderingContext2D,
+      castle: Castle,
+      selected: boolean,
+      time: number,
+) {
+      const p = project(castle.x, castle.y);
+      const x = p.x;
+      const y = p.y + 13;
+      const kingdom = KINGDOMS[castle.team];
+
+      ctx.fillStyle = "#00000045";
       ctx.beginPath();
-      ctx.ellipse(550, 570, 430, 62, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, y + 6, 35, 15, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      for (let sum = 0; sum <= (SIZE - 1) * 2; sum += 1) {
+      if (castle.hp <= 0) {
+            ctx.fillStyle = "#626758";
+            ctx.fillRect(x - 22, y - 3, 43, 10);
+            ctx.fillStyle = "#969681";
+            ctx.fillRect(x - 16, y - 12, 11, 11);
+            ctx.fillRect(x + 5, y - 8, 14, 9);
+            return;
+      }
+
+      if (selected) {
+            ctx.strokeStyle = "#e7d18a";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(x, y + 9, 40, 19, 0, 0, Math.PI * 2);
+            ctx.stroke();
+      }
+
+      polygon(ctx, [
+            [x - 30, y - 8],
+            [x, y - 25],
+            [x + 30, y - 8],
+            [x, y + 10],
+      ], "#c0c1a2");
+
+      polygon(ctx, [
+            [x - 30, y - 8],
+            [x, y + 10],
+            [x, y + 24],
+            [x - 30, y + 6],
+      ], "#6f7967");
+
+      polygon(ctx, [
+            [x, y + 10],
+            [x + 30, y - 8],
+            [x + 30, y + 6],
+            [x, y + 24],
+      ], "#9caa8c");
+
+      ctx.fillStyle = "#b6bda1";
+      ctx.fillRect(x - 12, y - 40, 24, 39);
+      ctx.fillStyle = "#758573";
+      ctx.fillRect(x + 5, y - 40, 7, 39);
+
+      polygon(ctx, [
+            [x - 17, y - 38],
+            [x, y - 57],
+            [x + 17, y - 38],
+      ], kingdom.color);
+
+      polygon(ctx, [
+            [x, y - 57],
+            [x + 17, y - 38],
+            [x, y - 38],
+      ], kingdom.dark);
+
+      for (const offset of [-28, 18]) {
+            ctx.fillStyle = "#aab598";
+            ctx.fillRect(x + offset, y - 24, 11, 28);
+
+            ctx.fillStyle = "#d0cfb1";
+
+            for (let index = 0; index < 3; index += 1) {
+                  ctx.fillRect(x + offset + index * 4, y - 28, 3, 8);
+            }
+
+            ctx.fillStyle = "#596952";
+            ctx.fillRect(x + offset + 4, y - 15, 3, 7);
+      }
+
+      ctx.fillStyle = "#354335";
+      ctx.fillRect(x - 4, y + 5, 9, 15);
+      ctx.fillRect(x - 3, y - 30, 5, 8);
+
+      ctx.fillStyle = "#d2c398";
+      ctx.fillRect(x + 9, y - 75, 2, 35);
+
+      const wave = Math.sin(time * 4 + castle.team) * 2;
+
+      polygon(ctx, [
+            [x + 11, y - 75],
+            [x + 32, y - 71 + wave],
+            [x + 11, y - 62],
+      ], kingdom.color);
+
+      ctx.fillStyle = "#1e271b";
+      ctx.fillRect(x - 26, y + 31, 52, 5);
+      ctx.fillStyle = kingdom.color;
+      ctx.fillRect(x - 25, y + 32, castle.hp / 2, 3);
+
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fff0c6";
+      ctx.fillText(`${kingdom.name} ${castle.reserve}`, x, y + 49);
+}
+
+function drawSoldier(
+      ctx: CanvasRenderingContext2D,
+      soldier: Soldier,
+      time: number,
+) {
+      if (soldier.delay > 0) return;
+
+      const p = project(soldier.x, soldier.y);
+      const x = p.x + (soldier.id % 3 - 1) * 4;
+      const y = p.y + 12;
+      const kingdom = KINGDOMS[soldier.team];
+      const walk = soldier.path.length > 0
+            ? Math.sin(time * 15 + soldier.id) * 2
+            : 0;
+
+      ctx.fillStyle = "#00000045";
+      ctx.beginPath();
+      ctx.ellipse(x, y + 2, 7, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#3a3429";
+      ctx.fillRect(x - 4, y - 3, 3, 5 + walk);
+      ctx.fillRect(x + 1, y - 3, 3, 5 - walk);
+
+      ctx.fillStyle = kingdom.dark;
+      ctx.fillRect(x - 5, y - 13, 10, 11);
+      ctx.fillStyle = kingdom.color;
+      ctx.fillRect(x - 5, y - 13, 6, 8);
+
+      ctx.fillStyle = "#d7bc8d";
+      ctx.fillRect(x - 3, y - 20, 6, 7);
+      ctx.fillStyle = "#b7c5bc";
+      ctx.fillRect(x - 4, y - 23, 8, 5);
+      ctx.fillStyle = "#63776b";
+      ctx.fillRect(x + 2, y - 22, 2, 8);
+
+      ctx.fillStyle = "#d5ddd0";
+      ctx.fillRect(x + 7, y - 20, 2, 13);
+      ctx.fillStyle = "#735535";
+      ctx.fillRect(x + 6, y - 8, 4, 2);
+}
+
+function render(
+      ctx: CanvasRenderingContext2D,
+      world: World,
+      backdrop: HTMLCanvasElement,
+) {
+      ctx.drawImage(backdrop, 0, 0);
+
+      for (let depth = 0; depth <= (SIZE - 1) * 2; depth += 1) {
             for (const tile of world.tiles) {
-                  if (tile.x + tile.y !== sum) continue;
+                  if (tile.x + tile.y !== depth) continue;
 
                   const p = project(tile.x, tile.y);
-                  const noise = (tile.x * 13 + tile.y * 7) % 4;
+                  const noise = (tile.x * 17 + tile.y * 11) % 4;
 
                   if (tile.terrain === "water") {
                         diamond(ctx, p.x, p.y + 9, [
-                              "#2c6778",
-                              "#2c6c7b",
-                              "#326f7c",
-                              "#306979",
+                              "#356d83",
+                              "#32687c",
+                              "#3d788c",
+                              "#397287",
                         ][noise]);
 
-                        ctx.strokeStyle = "rgba(148, 204, 194, .25)";
+                        ctx.strokeStyle = "#add0cb66";
                         ctx.lineWidth = 1;
-                        const wave = Math.sin(world.time * 2 + tile.x + tile.y) * 3;
+
+                        const wave = Math.sin(world.time * 2 + tile.x + tile.y) * 2;
 
                         ctx.beginPath();
-                        ctx.moveTo(p.x - 10 + wave, p.y + 20);
-                        ctx.lineTo(p.x - 3 + wave, p.y + 23);
-                        ctx.moveTo(p.x + 5 - wave, p.y + 17);
-                        ctx.lineTo(p.x + 11 - wave, p.y + 19);
+                        ctx.moveTo(p.x - 15 + wave, p.y + 20);
+                        ctx.lineTo(p.x - 7 + wave, p.y + 23);
+                        ctx.lineTo(p.x - 2 + wave, p.y + 21);
+                        ctx.moveTo(p.x + 4 - wave, p.y + 25);
+                        ctx.lineTo(p.x + 12 - wave, p.y + 22);
                         ctx.stroke();
 
                         continue;
@@ -588,46 +723,54 @@ function render(ctx: CanvasRenderingContext2D, world: World) {
                               [p.x, p.y + 23],
                               [p.x, p.y + 35],
                               [p.x - 23, p.y + 23.5],
-                        ], "#817a51");
+                        ], "#81774c");
 
                         polygon(ctx, [
                               [p.x, p.y + 23],
                               [p.x + 23, p.y + 11.5],
                               [p.x + 23, p.y + 23.5],
                               [p.x, p.y + 35],
-                        ], "#a39b6b");
+                        ], "#b0a371");
 
                         diamond(ctx, p.x, p.y, [
-                              "#829452",
-                              "#889956",
-                              "#7b8d4b",
-                              "#8b9a58",
+                              "#839459",
+                              "#899961",
+                              "#7d8d52",
+                              "#91a069",
                         ][noise]);
 
-                        ctx.fillStyle = "#a1ad65";
-                        ctx.fillRect(p.x - 5 + noise, p.y + 9, 3, 2);
-                        ctx.fillStyle = "#697e42";
-                        ctx.fillRect(p.x + 6, p.y + 13, 3, 2);
+                        ctx.fillStyle = "#bdbe7c80";
+                        ctx.fillRect(p.x - 9 + noise, p.y + 9, 5, 2);
+                        ctx.fillStyle = "#51673e70";
+                        ctx.fillRect(p.x + 7, p.y + 13, 3, 2);
 
                         continue;
                   }
 
-                  diamond(ctx, p.x, p.y + 3, "#635034");
-                  diamond(ctx, p.x, p.y, "#ab8c57");
+                  diamond(ctx, p.x, p.y + 4, "#5e4a30");
+                  diamond(ctx, p.x, p.y, "#b29861");
 
-                  ctx.strokeStyle = "#6e5635";
+                  ctx.strokeStyle = "#725b37";
                   ctx.lineWidth = 1;
 
-                  for (let i = 1; i < 5; i += 1) {
+                  for (let index = 1; index < 6; index += 1) {
+                        const offset = index / 6;
+
                         ctx.beginPath();
-                        ctx.moveTo(p.x - 23 + i * 9.2, p.y + 11.5 - i * 2.3);
-                        ctx.lineTo(p.x + i * 9.2, p.y + 23 - i * 2.3);
+                        ctx.moveTo(
+                              p.x - 23 + offset * 23,
+                              p.y + 11.5 - offset * 11.5,
+                        );
+                        ctx.lineTo(
+                              p.x + offset * 23,
+                              p.y + 23 - offset * 11.5,
+                        );
                         ctx.stroke();
                   }
 
-                  ctx.fillStyle = "#584831";
-                  ctx.fillRect(p.x - 21, p.y + 5, 3, 10);
-                  ctx.fillRect(p.x + 18, p.y + 5, 3, 10);
+                  ctx.fillStyle = "#685234";
+                  ctx.fillRect(p.x - 21, p.y + 6, 3, 10);
+                  ctx.fillRect(p.x + 18, p.y + 6, 3, 10);
             }
       }
 
@@ -640,14 +783,19 @@ function render(ctx: CanvasRenderingContext2D, world: World) {
 
             objects.push({
                   depth: tile.x + tile.y,
-                  draw: () => drawTree(ctx, p.x, p.y + 13, tile.x + tile.y),
+                  draw: () => drawTree(ctx, p.x, p.y + 14),
             });
       }
 
       for (const castle of world.castles) {
             objects.push({
                   depth: castle.x + castle.y,
-                  draw: () => drawCastle(ctx, castle, castle.team === world.selected),
+                  draw: () => drawCastle(
+                        ctx,
+                        castle,
+                        castle.team === world.selected || castle.team === world.hover,
+                        world.time,
+                  ),
             });
       }
 
@@ -660,15 +808,6 @@ function render(ctx: CanvasRenderingContext2D, world: World) {
 
       objects.sort((a, b) => a.depth - b.depth);
       objects.forEach((object) => object.draw());
-
-      const center = project(10, 10);
-
-      ctx.fillStyle = "#d0c4a0";
-      ctx.fillRect(center.x - 3, center.y - 23, 6, 36);
-      ctx.fillStyle = "#a6936a";
-      ctx.fillRect(center.x - 10, center.y + 10, 20, 6);
-      ctx.fillStyle = "#e5d4a1";
-      ctx.fillRect(center.x - 6, center.y - 28, 12, 8);
 }
 
 export default function GamePage() {
@@ -676,24 +815,18 @@ export default function GamePage() {
       const worldRef = useRef<World | null>(null);
 
       const [status, setStatus] = useState<Status>({
-            time: 0,
             running: false,
-            selected: 1,
+            result: null,
+            speed: 1,
+            time: 0,
             castles: [],
+            selected: 1,
+            deployed: 0,
       });
 
-      const [message, setMessage] = useState(
-            "네 왕국이 다리로 연결되어 있습니다. 전투 시작을 눌러주세요.",
-      );
-
-      function syncStatus(world: World) {
-            setStatus({
-                  time: world.time,
-                  running: world.running,
-                  selected: world.selected,
-                  castles: world.castles.map((castle) => ({ ...castle })),
-            });
-      }
+      const [showKingdoms, setShowKingdoms] = useState(false);
+      const [showGuide, setShowGuide] = useState(false);
+      const [message, setMessage] = useState("▶ 버튼을 눌러 전투를 시작하세요.");
 
       useEffect(() => {
             const canvas = canvasRef.current;
@@ -701,38 +834,45 @@ export default function GamePage() {
 
             if (!canvas || !ctx) return;
 
+            ctx.imageSmoothingEnabled = false;
+
+            const backdrop = createBackdrop();
             const world = makeWorld();
+
             worldRef.current = world;
+            setStatus(snapshot(world));
 
             let frame = 0;
-            let previous = 0;
+            let previous: number | null = null;
             let hudClock = 0;
 
             function animate(now: number) {
-                  if (!ctx) return;
-
-                  const dt = previous ? Math.min((now - previous) / 1000, 0.05) : 0;
-                  previous = now;
-
                   const current = worldRef.current;
 
-                  if (!current) return;
+                  if (!current || !ctx) return;
 
-                  if (current.running) updateWorld(current, dt);
+                  const elapsed = previous === null
+                        ? 0
+                        : Math.min((now - previous) / 1000, 0.05);
 
-                  render(ctx, current);
+                  previous = now;
 
-                  hudClock += dt;
+                  if (current.running) {
+                        updateWorld(current, elapsed * current.speed);
+                  }
 
-                  if (hudClock >= 0.2) {
-                        syncStatus(current);
+                  render(ctx, current, backdrop);
+
+                  hudClock += elapsed;
+
+                  if (hudClock >= 0.15) {
+                        setStatus(snapshot(current));
                         hudClock = 0;
                   }
 
                   frame = requestAnimationFrame(animate);
             }
 
-            syncStatus(world);
             frame = requestAnimationFrame(animate);
 
             return () => {
@@ -744,176 +884,318 @@ export default function GamePage() {
       function toggleRunning() {
             const world = worldRef.current;
 
-            if (!world) return;
-
-            const alive = world.castles.filter((castle) => castle.hp > 0);
-
-            if (alive.length <= 1) {
-                  setMessage("전투가 끝났습니다. 맵 초기화로 다시 시작하세요.");
-                  return;
-            }
+            if (!world || world.result) return;
 
             world.running = !world.running;
-            syncStatus(world);
+
+            setStatus(snapshot(world));
             setMessage(
                   world.running
-                        ? "적 성을 클릭하면 파란 왕국의 병사 최대 6명이 출격합니다."
-                        : "일시정지했습니다. 맵과 왕국 배치를 살펴보세요.",
+                        ? "적 성을 누르면 청람 병사 최대 6명이 출격합니다."
+                        : "일시정지 중입니다.",
             );
       }
 
-      function attack(target: Team) {
+      function changeSpeed() {
             const world = worldRef.current;
 
             if (!world) return;
 
-            world.selected = target;
-
-            if (target === 0) {
-                  setMessage("청람 왕국이 내 왕국입니다. 다른 왕국의 성을 선택하세요.");
-            } else if (!world.running) {
-                  setMessage(`${KINGDOMS[target].name} 선택. 전투 시작 후 출격할 수 있습니다.`);
-            } else if (dispatch(world, 0, target)) {
-                  setMessage(`${KINGDOMS[target].name}으로 병력을 보냈습니다.`);
-            } else {
-                  setMessage("출격할 병력이 없거나 성이 이미 함락되었습니다.");
-            }
-
-            syncStatus(world);
+            world.speed = world.speed === 1 ? 2 : 1;
+            setStatus(snapshot(world));
       }
 
       function restart() {
             const world = makeWorld();
 
             worldRef.current = world;
-            syncStatus(world);
-            setMessage("맵을 초기화했습니다. 전투 시작을 눌러주세요.");
+            setStatus(snapshot(world));
+            setMessage("전장을 초기화했습니다. ▶ 버튼으로 시작하세요.");
       }
 
-      const selectedCastle = status.castles[status.selected];
+      function attack(team: Team) {
+            const world = worldRef.current;
+
+            if (!world || world.result) return;
+
+            world.selected = team;
+
+            if (team === 0) {
+                  setMessage("청람은 내 왕국입니다. 공격할 적 성을 선택하세요.");
+            } else if (world.castles[team].hp <= 0) {
+                  setMessage("이미 함락된 성입니다.");
+            } else if (!world.running) {
+                  setMessage(`${KINGDOMS[team].name} 선택 · 전투 시작 후 출격할 수 있습니다.`);
+            } else if (dispatch(world, 0, team)) {
+                  setMessage(`${KINGDOMS[team].name} 왕국으로 병력을 보냈습니다.`);
+            } else {
+                  setMessage("출격 가능한 병력이 없습니다.");
+            }
+
+            setStatus(snapshot(world));
+      }
+
+      function hitCastle(
+            canvas: HTMLCanvasElement,
+            clientX: number,
+            clientY: number,
+      ): Team | null {
+            const world = worldRef.current;
+
+            if (!world) return null;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (clientX - rect.left) / rect.width * WIDTH;
+            const y = (clientY - rect.top) / rect.height * HEIGHT;
+
+            const castle = [...world.castles]
+                  .sort((a, b) => b.x + b.y - a.x - a.y)
+                  .find((item) => {
+                        const p = project(item.x, item.y);
+
+                        return (
+                              Math.abs(p.x - x) < 39 &&
+                              y > p.y - 65 &&
+                              y < p.y + 59
+                        );
+                  });
+
+            return castle?.team ?? null;
+      }
+
+      const own = status.castles[0];
+      const minutes = Math.floor(status.time / 60).toString().padStart(2, "0");
+      const seconds = Math.floor(status.time % 60).toString().padStart(2, "0");
 
       return (
             <main className={styles.page}>
-                  <header className={styles.topbar}>
-                        <div className={styles.title}>
-                              <span className={styles.stage}>MAP 01</span>
-                              <strong>네 왕국의 교차로</strong>
-                              <span className={styles.subtitle}>MONARCH · FIELD TEST</span>
-                        </div>
-
-                        <Link href="/" className={styles.back}>
-                              메인으로
-                        </Link>
-                  </header>
-
-                  <section className={styles.battlefield}>
-                        <div className={styles.mapLabel}>
-                              <span className={styles.liveDot} />
-                              {status.running ? "전투 진행 중" : "일시정지"}
-                              <span className={styles.time}>
-                                    {Math.floor(status.time / 60).toString().padStart(2, "0")}
-                                    :
-                                    {Math.floor(status.time % 60).toString().padStart(2, "0")}
-                              </span>
-                        </div>
-
+                  <section className={styles.game} aria-label="네 왕국의 교차로">
                         <canvas
                               ref={canvasRef}
                               width={WIDTH}
                               height={HEIGHT}
                               className={styles.canvas}
-                              aria-label="물길과 다리로 연결된 네 왕국의 전장. 아래 왕국 버튼으로도 공격 대상을 선택할 수 있습니다."
+                              aria-label="네 왕국의 전장. 왕국 현황 메뉴에서도 공격 대상을 선택할 수 있습니다."
                               onClick={(event) => {
-                                    const rect = event.currentTarget.getBoundingClientRect();
-                                    const x = (event.clientX - rect.left) / rect.width * WIDTH;
-                                    const y = (event.clientY - rect.top) / rect.height * HEIGHT;
+                                    const team = hitCastle(
+                                          event.currentTarget,
+                                          event.clientX,
+                                          event.clientY,
+                                    );
+
+                                    if (team !== null) attack(team);
+                              }}
+                              onPointerMove={(event) => {
                                     const world = worldRef.current;
 
                                     if (!world) return;
 
-                                    const castle = world.castles.find((item) => {
-                                          const p = project(item.x, item.y);
+                                    const team = hitCastle(
+                                          event.currentTarget,
+                                          event.clientX,
+                                          event.clientY,
+                                    );
 
-                                          return (
-                                                Math.abs(p.x - x) < 42 &&
-                                                y > p.y - 65 &&
-                                                y < p.y + 55
-                                          );
-                                    });
-
-                                    if (castle) attack(castle.team);
+                                    world.hover = team;
+                                    event.currentTarget.style.cursor =
+                                          team === null ? "default" : "pointer";
+                              }}
+                              onPointerLeave={() => {
+                                    if (worldRef.current) {
+                                          worldRef.current.hover = null;
+                                    }
                               }}
                         />
 
-                        <div className={styles.mapCaption}>
-                              <strong>THE FOUR KINGDOMS</strong>
-                              <span>성 4개 · 연결 교량 · 중앙 섬</span>
+                        <div className={styles.stageLabel}>
+                              <span>STAGE 1</span>
+                              네 왕국의 교차로
                         </div>
-                  </section>
 
-                  <section className={styles.controlPanel}>
-                        <div className={styles.kingdoms}>
-                              {KINGDOMS.map((kingdom, index) => {
-                                    const team = index as Team;
-                                    const castle = status.castles[team];
+                        <nav className={styles.toolbar} aria-label="전장 메뉴">
+                              <button
+                                    type="button"
+                                    className={styles.tool}
+                                    onClick={toggleRunning}
+                                    disabled={status.result !== null}
+                                    title={status.running ? "일시정지" : "전투 시작"}
+                                    aria-label={status.running ? "일시정지" : "전투 시작"}
+                              >
+                                    {status.running ? "Ⅱ" : "▶"}
+                              </button>
 
-                                    return (
+                              <button
+                                    type="button"
+                                    className={styles.tool}
+                                    onClick={changeSpeed}
+                                    title="진행 속도 변경"
+                                    aria-label={`현재 ${status.speed}배속. 클릭하여 변경`}
+                              >
+                                    <span className={styles.speed}>{status.speed}×</span>
+                              </button>
+
+                              <button
+                                    type="button"
+                                    className={styles.tool}
+                                    onClick={() => setShowKingdoms((value) => !value)}
+                                    title="왕국 현황"
+                                    aria-label="왕국 현황"
+                                    aria-expanded={showKingdoms}
+                              >
+                                    ⚑
+                              </button>
+
+                              <button
+                                    type="button"
+                                    className={styles.tool}
+                                    onClick={() => setShowGuide((value) => !value)}
+                                    title="조작 방법"
+                                    aria-label="조작 방법"
+                                    aria-expanded={showGuide}
+                              >
+                                    ?
+                              </button>
+
+                              <button
+                                    type="button"
+                                    className={styles.tool}
+                                    onClick={restart}
+                                    title="전장 초기화"
+                                    aria-label="전장 초기화"
+                              >
+                                    ↻
+                              </button>
+
+                              <Link
+                                    href="/world"
+                                    className={styles.tool}
+                                    title="월드로 돌아가기"
+                                    aria-label="월드로 돌아가기"
+                              >
+                                    ↶
+                              </Link>
+                        </nav>
+
+                        <div className={styles.status}>
+                              <span className={styles.ownName}>⚑ 청람</span>
+                              <span>성 {own?.hp ?? 100}</span>
+                              <span>대기 {own?.reserve ?? 18}</span>
+                              <span>출격 {status.deployed}</span>
+                              <time>{minutes}:{seconds}</time>
+                        </div>
+
+                        {showKingdoms && (
+                              <section className={styles.kingdomPanel}>
+                                    <header className={styles.panelHeader}>
+                                          <strong>왕국 현황</strong>
+
                                           <button
-                                                key={kingdom.name}
                                                 type="button"
-                                                className={[
-                                                      styles.kingdom,
-                                                      status.selected === team ? styles.selected : "",
-                                                ].join(" ")}
-                                                onClick={() => attack(team)}
-                                                aria-pressed={status.selected === team}
+                                                onClick={() => setShowKingdoms(false)}
+                                                aria-label="왕국 현황 닫기"
                                           >
-                                                <span
-                                                      className={styles.banner}
-                                                      style={{ backgroundColor: kingdom.color }}
-                                                />
-                                                <span className={styles.kingdomInfo}>
-                                                      <strong>
-                                                            {kingdom.name}
-                                                            {team === 0 ? " · 나" : ""}
-                                                      </strong>
-                                                      <small>
-                                                            {castle && castle.hp <= 0
-                                                                  ? "함락"
-                                                                  : `성 ${castle?.hp ?? 100} · 대기 ${castle?.reserve ?? 12}`}
-                                                      </small>
-                                                </span>
+                                                ×
                                           </button>
-                                    );
-                              })}
+                                    </header>
+
+                                    {KINGDOMS.map((kingdom, index) => {
+                                          const team = index as Team;
+                                          const castle = status.castles[team];
+
+                                          return (
+                                                <button
+                                                      key={kingdom.name}
+                                                      type="button"
+                                                      className={styles.kingdomRow}
+                                                      onClick={() => attack(team)}
+                                                      aria-pressed={status.selected === team}
+                                                      disabled={status.result !== null}
+                                                >
+                                                      <span style={{ color: kingdom.color }}>
+                                                            ⚑ {kingdom.name}
+                                                            {team === 0 ? " · 나" : ""}
+                                                      </span>
+
+                                                      <small>
+                                                            {castle?.hp === 0
+                                                                  ? "함락"
+                                                                  : `${castle?.hp ?? 100} / ${castle?.reserve ?? 18}`}
+                                                      </small>
+                                                </button>
+                                          );
+                                    })}
+                              </section>
+                        )}
+
+                        {showGuide && (
+                              <section className={styles.guide}>
+                                    <header className={styles.panelHeader}>
+                                          <strong>조작 방법</strong>
+
+                                          <button
+                                                type="button"
+                                                onClick={() => setShowGuide(false)}
+                                                aria-label="조작 방법 닫기"
+                                          >
+                                                ×
+                                          </button>
+                                    </header>
+
+                                    <p>▶ 전투 시작 / 일시정지</p>
+                                    <p>적 성 클릭 : 최대 6명 출격</p>
+                                    <p>2.5초마다 대기 병력 1명 보충</p>
+                                    <p>적 성을 모두 함락하면 승리합니다.</p>
+                              </section>
+                        )}
+
+                        {!status.running && !status.result && (
+                              <button
+                                    type="button"
+                                    className={styles.pause}
+                                    onClick={toggleRunning}
+                              >
+                                    {status.time === 0 ? "▶ 전투 시작" : "Ⅱ 일시정지"}
+                              </button>
+                        )}
+
+                        <div className={styles.message} role="status">
+                              {message}
                         </div>
 
-                        <div className={styles.commandRow}>
-                              <div className={styles.message}>
-                                    <strong>
-                                          선택 대상 · {KINGDOMS[status.selected].name}
-                                          {selectedCastle?.hp === 0 ? " / 함락" : ""}
-                                    </strong>
-                                    <p aria-live="polite">{message}</p>
-                              </div>
+                        {status.result && (
+                              <div className={styles.resultBackdrop}>
+                                    <section
+                                          className={styles.result}
+                                          role="dialog"
+                                          aria-modal="true"
+                                          aria-labelledby="battle-result"
+                                    >
+                                          <span>STAGE 1</span>
 
-                              <div className={styles.buttons}>
-                                    <button
-                                          type="button"
-                                          className={styles.resetButton}
-                                          onClick={restart}
-                                    >
-                                          맵 초기화
-                                    </button>
-                                    <button
-                                          type="button"
-                                          className={styles.playButton}
-                                          onClick={toggleRunning}
-                                    >
-                                          {status.running ? "Ⅱ 일시정지" : "▶ 전투 시작"}
-                                    </button>
+                                          <h1 id="battle-result">
+                                                {status.result === "victory"
+                                                      ? "원정 성공"
+                                                      : "왕국 함락"}
+                                          </h1>
+
+                                          <p>
+                                                {status.result === "victory"
+                                                      ? "모든 적 왕국의 성을 함락했습니다."
+                                                      : "청람 왕국의 성이 함락되었습니다."}
+                                          </p>
+
+                                          <div className={styles.resultActions}>
+                                                <button type="button" onClick={restart}>
+                                                      다시 시작
+                                                </button>
+
+                                                <Link href="/world">
+                                                      월드로
+                                                </Link>
+                                          </div>
+                                    </section>
                               </div>
-                        </div>
+                        )}
                   </section>
             </main>
       );
