@@ -1,0 +1,669 @@
+.titlePage {
+      position: relative;
+      display: flex;
+      min-height: 100svh;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      padding: 28px clamp(22px, 5vw, 76px) 23px;
+      color: #fff6e3;
+      background: #191711;
+      isolation: isolate;
+}
+
+.roomImage,
+.roomShade,
+.grain {
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      pointer-events: none;
+}
+
+.roomImage {
+      background-image: url("/images/monarch-title.png");
+      background-position: center 46%;
+      background-size: cover;
+      filter: saturate(.9) contrast(1.02);
+      transform: scale(1.015);
+}
+
+.roomShade {
+      background:
+            linear-gradient(90deg, rgba(19, 17, 13, .84) 0%, rgba(27, 21, 14, .73) 28%, rgba(24, 19, 13, .22) 68%, rgba(20, 18, 14, .12) 100%),
+            linear-gradient(0deg, rgba(17, 15, 12, .7) 0%, transparent 27%, rgba(24, 20, 14, .16) 100%),
+            rgba(73, 47, 19, .12);
+}
+
+.grain {
+      z-index: 1;
+      opacity: .13;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+}
+
+.header {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+}
+
+.brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: #fff6e3;
+      text-decoration: none;
+}
+
+.brandIcon {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid rgba(231, 194, 119, .5);
+      border-radius: 13px;
+      background: rgba(36, 29, 20, .65);
+      color: #e2bd7c;
+      font-family: Georgia, serif;
+      font-size: 24px;
+      box-shadow: inset 0 0 14px rgba(222, 177, 96, .09);
+}
+
+.brand strong,
+.brand small {
+      display: block;
+}
+
+.brand strong {
+      font-family: Georgia, serif;
+      font-size: 13px;
+      letter-spacing: .2em;
+}
+
+.brand small {
+      margin-top: 4px;
+      color: rgba(255, 239, 204, .57);
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: .22em;
+}
+
+.edition {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: rgba(255, 242, 213, .62);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .19em;
+}
+
+.edition span {
+      color: #d7ad66;
+      font-size: 12px;
+}
+
+.hero {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      width: min(100%, 1200px);
+      flex: 1;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 auto;
+      padding: 26px 0 35px;
+}
+
+.copyPanel {
+      width: min(100%, 500px);
+      padding: 34px 0 38px;
+}
+
+.kicker {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 20px;
+      color: rgba(255, 232, 186, .72);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+}
+
+.kicker span {
+      width: 20px;
+      height: 1px;
+      background: #d2a65d;
+}
+
+.copyPanel h1 {
+      display: flex;
+      align-items: flex-end;
+      gap: 13px;
+      margin: 0;
+      color: #fff4dc;
+      text-shadow: 0 4px 22px rgba(0, 0, 0, .38);
+}
+
+.titleKorean {
+      font-family: "Noto Serif KR", "Batang", serif;
+      font-size: clamp(38px, 5.2vw, 65px);
+      font-weight: 700;
+      letter-spacing: -.09em;
+      line-height: 1.15;
+      white-space: nowrap;
+}
+
+.titleNumber {
+      padding-bottom: 7px;
+      color: #dfb96f;
+      font-family: Georgia, serif;
+      font-size: clamp(22px, 3vw, 35px);
+      font-weight: 400;
+      letter-spacing: .08em;
+}
+
+.rule {
+      display: flex;
+      width: 260px;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0 20px;
+      color: #d3ad6b;
+      font-size: 10px;
+}
+
+.rule::before,
+.rule::after {
+      height: 1px;
+      flex: 1;
+      background: linear-gradient(90deg, rgba(212, 174, 105, .05), rgba(212, 174, 105, .62));
+      content: "";
+}
+
+.rule::after {
+      background: linear-gradient(90deg, rgba(212, 174, 105, .62), rgba(212, 174, 105, .05));
+}
+
+.tagline {
+      margin: 0;
+      color: #fff0d4;
+      font-family: "Noto Serif KR", "Batang", serif;
+      font-size: clamp(20px, 2.35vw, 27px);
+      font-weight: 600;
+      letter-spacing: -.06em;
+      line-height: 1.6;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .42);
+}
+
+.description {
+      margin: 12px 0 26px;
+      color: rgba(255, 239, 209, .66);
+      font-size: 12px;
+      line-height: 1.8;
+}
+
+.actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+}
+
+.startButton {
+      display: flex;
+      min-width: 246px;
+      min-height: 65px;
+      align-items: center;
+      gap: 13px;
+      padding: 11px 15px;
+      border: 1px solid rgba(247, 219, 165, .85);
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(221, 181, 110, .96), rgba(157, 112, 57, .96));
+      color: #2c2116;
+      text-decoration: none;
+      box-shadow: 0 7px 23px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 249, 223, .55);
+      transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+
+.startButton:hover {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 249, 223, .6);
+}
+
+.startButton:focus-visible,
+.guideButton:focus-visible,
+.closeButton:focus-visible,
+.modalStart:focus-visible {
+      outline: 2px solid #fff1c7;
+      outline-offset: 4px;
+}
+
+.startIcon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border: 1px solid rgba(71, 48, 24, .27);
+      border-radius: 50%;
+      font-size: 10px;
+}
+
+.startButton strong,
+.startButton small {
+      display: block;
+}
+
+.startButton strong {
+      font-family: "Noto Serif KR", serif;
+      font-size: 14px;
+      letter-spacing: -.03em;
+}
+
+.startButton small {
+      margin-top: 3px;
+      color: rgba(53, 39, 23, .68);
+      font-family: Georgia, serif;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: .15em;
+}
+
+.arrow {
+      margin-left: auto;
+      font-size: 17px;
+}
+
+.guideButton {
+      display: flex;
+      min-height: 42px;
+      align-items: center;
+      gap: 8px;
+      padding: 0 2px;
+      border: 0;
+      background: none;
+      color: rgba(255, 241, 215, .8);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+}
+
+.guideButton span {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      place-items: center;
+      border: 1px solid rgba(255, 232, 189, .55);
+      border-radius: 50%;
+      color: #e3c184;
+      font-family: Georgia, serif;
+      font-size: 11px;
+}
+
+.saveNote {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 25px;
+      color: rgba(255, 234, 200, .53);
+      font-size: 9px;
+}
+
+.saveDot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #b79c69;
+}
+
+.saveLine {
+      width: 25px;
+      height: 1px;
+      margin: 0 2px;
+      background: rgba(255, 229, 185, .28);
+}
+
+.sceneNote {
+      position: absolute;
+      right: 3%;
+      bottom: 12%;
+      display: flex;
+      min-width: 225px;
+      align-items: center;
+      gap: 11px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 237, 199, .31);
+      border-radius: 7px;
+      background: rgba(36, 28, 19, .43);
+      color: #fff1d4;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+}
+
+.notePin {
+      color: #e2bd78;
+      font-size: 15px;
+}
+
+.sceneNote small,
+.sceneNote strong {
+      display: block;
+}
+
+.sceneNote small {
+      margin-bottom: 4px;
+      color: rgba(255, 233, 192, .58);
+      font-family: Georgia, serif;
+      font-size: 7px;
+      letter-spacing: .18em;
+}
+
+.sceneNote strong {
+      font-family: "Noto Serif KR", serif;
+      font-size: 11px;
+      font-weight: 500;
+}
+
+.noteArrow {
+      margin-left: auto;
+      color: #d8b878;
+      font-size: 17px;
+}
+
+.footer {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: rgba(255, 239, 209, .55);
+}
+
+.footerMark {
+      color: rgba(255, 239, 209, .8);
+      font-family: Georgia, serif;
+      font-size: 13px;
+      letter-spacing: .16em;
+}
+
+.footerMark span {
+      margin-left: 3px;
+      color: #d5ae6b;
+      font-size: 9px;
+}
+
+.footer p {
+      margin: 0 auto 0 10px;
+      font-size: 9px;
+}
+
+.footerRight {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      font-family: Georgia, serif;
+      font-size: 8px;
+      letter-spacing: .13em;
+}
+
+.footerRight span:first-child {
+      color: rgba(255, 239, 209, .42);
+}
+
+.footerDivider {
+      width: 1px;
+      height: 12px;
+      background: rgba(255, 239, 209, .28);
+}
+
+.modalBackdrop {
+      position: fixed;
+      z-index: 5;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(18, 15, 11, .72);
+      backdrop-filter: blur(7px);
+}
+
+.guideModal {
+      position: relative;
+      width: min(100%, 460px);
+      padding: 33px 32px 29px;
+      border: 1px solid rgba(215, 187, 135, .48);
+      border-radius: 12px;
+      background: linear-gradient(145deg, #f4ead2, #e9ddbf);
+      color: #382b1c;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, .42), inset 0 0 0 5px rgba(255, 255, 255, .18);
+}
+
+.closeButton {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      width: 30px;
+      height: 30px;
+      border: 0;
+      background: transparent;
+      color: #807050;
+      font-size: 25px;
+      cursor: pointer;
+}
+
+.modalKicker {
+      margin: 0 0 7px;
+      color: #9e7940;
+      font-family: Georgia, serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .2em;
+}
+
+.guideModal h2 {
+      margin: 0;
+      font-family: "Noto Serif KR", serif;
+      font-size: 24px;
+      letter-spacing: -.06em;
+}
+
+.modalIntro {
+      margin: 8px 0 22px;
+      color: #85795f;
+      font-size: 11px;
+}
+
+.guideList {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+}
+
+.guideList li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+}
+
+.guideList li > b {
+      color: #ad8a50;
+      font-family: Georgia, serif;
+      font-size: 12px;
+}
+
+.guideList strong,
+.guideList small {
+      display: block;
+}
+
+.guideList strong {
+      font-size: 11px;
+}
+
+.guideList small {
+      margin-top: 4px;
+      color: #887e67;
+      font-size: 10px;
+      line-height: 1.5;
+}
+
+.modalStart {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding: 13px 15px;
+      border-radius: 7px;
+      background: #66503a;
+      color: #fff5dd;
+      font-family: "Noto Serif KR", serif;
+      font-size: 11px;
+      text-decoration: none;
+}
+
+.modalStart span {
+      font-size: 17px;
+}
+
+@media (max-width: 760px) {
+      .titlePage {
+            min-height: 100svh;
+            padding: 17px 19px 17px;
+      }
+
+      .roomImage {
+            background-position: 54% center;
+      }
+
+      .roomShade {
+            background:
+                  linear-gradient(90deg, rgba(19, 17, 13, .78) 0%, rgba(27, 21, 14, .58) 52%, rgba(20, 18, 14, .25) 100%),
+                  linear-gradient(0deg, rgba(17, 15, 12, .74) 0%, rgba(17, 15, 12, .08) 70%);
+      }
+
+      .brandIcon {
+            width: 35px;
+            height: 35px;
+            border-radius: 11px;
+            font-size: 20px;
+      }
+
+      .edition {
+            gap: 5px;
+            font-size: 7px;
+            letter-spacing: .12em;
+      }
+
+      .hero {
+            align-items: flex-end;
+            padding: 24px 0 28px;
+      }
+
+      .copyPanel {
+            padding: 0 0 13px;
+      }
+
+      .kicker {
+            margin-bottom: 15px;
+            font-size: 10px;
+      }
+
+      .titleKorean {
+            font-size: clamp(37px, 9vw, 56px);
+      }
+
+      .titleNumber {
+            padding-bottom: 4px;
+            font-size: 25px;
+      }
+
+      .rule {
+            width: 215px;
+            margin: 13px 0 13px;
+      }
+
+      .tagline {
+            font-size: 21px;
+      }
+
+      .description {
+            margin: 9px 0 20px;
+            font-size: 11px;
+      }
+
+      .actions {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
+      }
+
+      .startButton {
+            width: min(100%, 280px);
+            min-height: 58px;
+      }
+
+      .guideButton {
+            min-height: 34px;
+      }
+
+      .saveNote {
+            margin-top: 14px;
+            font-size: 8px;
+      }
+
+      .sceneNote {
+            right: 0;
+            bottom: 17px;
+            min-width: unset;
+            padding: 9px 11px;
+      }
+
+      .sceneNote strong {
+            font-size: 9px;
+      }
+
+      .footer p {
+            display: none;
+      }
+
+      .footerRight {
+            margin-left: auto;
+            font-size: 7px;
+      }
+}
+
+@media (max-width: 420px) {
+      .edition {
+            max-width: 110px;
+            text-align: right;
+      }
+
+      .sceneNote {
+            display: none;
+      }
+
+      .copyPanel {
+            padding-bottom: 9px;
+      }
+
+      .footerRight span:first-child {
+            display: none;
+      }
+}
+
+@media (prefers-reduced-motion: reduce) {
+      .titlePage *,
+      .titlePage *::before,
+      .titlePage *::after {
+            transition-duration: .01ms !important;
+      }
+}

@@ -1,0 +1,128 @@
+.page {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #000;
+}
+
+.page,
+.page * {
+      box-sizing: border-box;
+}
+
+.screen {
+      position: relative;
+      width: min(100vw, calc(100dvh * 4 / 3), 960px);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: #000;
+      container-type: inline-size;
+}
+
+.menu {
+      position: absolute;
+      top: 3%;
+      left: 3%;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+}
+
+.menuItem {
+      display: block;
+      margin: 0;
+      padding: 2px 0;
+      border: 0;
+      background: transparent;
+      color: #aaa;
+      font-family: "Gulim", "Dotum", sans-serif;
+      font-size: clamp(14px, 3.8cqw, 28px);
+      font-weight: 400;
+      line-height: 1.15;
+      text-align: left;
+      text-decoration: none;
+      text-shadow: 1px 2px 0 #393939;
+      cursor: pointer;
+}
+
+.menuItem:hover {
+      color: #fff;
+}
+
+.menuItem:disabled {
+      color: #505050;
+      text-shadow: none;
+      cursor: default;
+}
+
+.menuItem:focus-visible {
+      outline: 1px dashed #aaa;
+      outline-offset: 4px;
+}
+
+.logo {
+      position: absolute;
+      top: 24%;
+      left: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+      transform: translateX(-50%);
+      text-align: center;
+      user-select: none;
+}
+
+.crown {
+      width: 16%;
+      height: auto;
+      margin-bottom: 1%;
+      color: #82b982;
+      transform: rotate(-12deg);
+      filter: drop-shadow(0 0 2px #82b98250);
+}
+
+.title {
+      position: relative;
+      margin: 0;
+      color: #65b3e2;
+      font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+      font-size: clamp(48px, 18cqw, 150px);
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.07em;
+      text-shadow: 0 0 3px #65b3e260;
+}
+
+.title sup {
+      position: absolute;
+      top: -0.1em;
+      right: -0.55em;
+      font-size: 0.45em;
+      line-height: 1;
+      transform: rotate(12deg);
+}
+
+.subtitle {
+      margin: 2% 0 0;
+      color: #a5c4d7;
+      font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+      font-size: clamp(20px, 6.8cqw, 56px);
+      font-weight: 400;
+      line-height: 1.2;
+      letter-spacing: -0.05em;
+}
+
+.genre {
+      margin: 2% 0 0;
+      padding-left: 0.55em;
+      color: #8c9298;
+      font-family: Arial, sans-serif;
+      font-size: clamp(6px, 1.5cqw, 12px);
+      font-weight: 700;
+      line-height: 1.5;
+      letter-spacing: 0.55em;
+}

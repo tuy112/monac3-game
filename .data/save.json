@@ -1,0 +1,195 @@
+{
+  "stages": [
+    {
+      "id": "serende-capital",
+      "name": "세렌드성",
+      "countryId": "serende",
+      "countryName": "세렌드 왕국",
+      "tier": 0,
+      "x": 48.6,
+      "y": 46.3,
+      "isCapital": true,
+      "isPlayerHome": true,
+      "owner": "player",
+      "connections": [
+        "serende-2",
+        "dorn-capital"
+      ]
+    },
+    {
+      "id": "serende-2",
+      "name": "뮐렌성",
+      "countryId": "serende",
+      "countryName": "세렌드 왕국",
+      "tier": 0,
+      "x": 46.9,
+      "y": 49.6,
+      "isCapital": false,
+      "isPlayerHome": false,
+      "owner": "player",
+      "connections": [
+        "serende-capital",
+        "kaldur-capital"
+      ]
+    },
+    {
+      "id": "kaldur-capital",
+      "name": "칼두르성",
+      "countryId": "kaldur",
+      "countryName": "칼두르 부족",
+      "tier": 1,
+      "x": 54.6,
+      "y": 58.8,
+      "isCapital": true,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "serende-2",
+        "kaldur-2",
+        "eisenheim-capital"
+      ]
+    },
+    {
+      "id": "kaldur-2",
+      "name": "그로마진",
+      "countryId": "kaldur",
+      "countryName": "칼두르 부족",
+      "tier": 1,
+      "x": 53.2,
+      "y": 63,
+      "isCapital": false,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "kaldur-capital"
+      ]
+    },
+    {
+      "id": "dorn-capital",
+      "name": "도른성",
+      "countryId": "dorn",
+      "countryName": "도른 왕국",
+      "tier": 2,
+      "x": 53,
+      "y": 25,
+      "isCapital": true,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "serende-capital",
+        "dorn-2",
+        "bria-capital"
+      ]
+    },
+    {
+      "id": "dorn-2",
+      "name": "카젠성",
+      "countryId": "dorn",
+      "countryName": "도른 왕국",
+      "tier": 2,
+      "x": 57,
+      "y": 29,
+      "isCapital": false,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "dorn-capital"
+      ]
+    },
+    {
+      "id": "bria-capital",
+      "name": "브리아성",
+      "countryId": "bria",
+      "countryName": "브리아 왕국",
+      "tier": 3,
+      "x": 43,
+      "y": 36,
+      "isCapital": true,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "dorn-capital",
+        "bria-2",
+        "belmore-capital"
+      ]
+    },
+    {
+      "id": "bria-2",
+      "name": "노엘성",
+      "countryId": "bria",
+      "countryName": "브리아 왕국",
+      "tier": 3,
+      "x": 40,
+      "y": 32,
+      "isCapital": false,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "bria-capital"
+      ]
+    },
+    {
+      "id": "belmore-capital",
+      "name": "벨모어성",
+      "countryId": "belmore",
+      "countryName": "벨모어 공국",
+      "tier": 4,
+      "x": 33,
+      "y": 56,
+      "isCapital": true,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "bria-capital",
+        "belmore-2"
+      ]
+    },
+    {
+      "id": "belmore-2",
+      "name": "하스틴성",
+      "countryId": "belmore",
+      "countryName": "벨모어 공국",
+      "tier": 4,
+      "x": 29,
+      "y": 60,
+      "isCapital": false,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "belmore-capital"
+      ]
+    },
+    {
+      "id": "eisenheim-capital",
+      "name": "아이젠하임성",
+      "countryId": "eisenheim",
+      "countryName": "아이젠하임 제국",
+      "tier": 5,
+      "x": 80.6,
+      "y": 40,
+      "isCapital": true,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "kaldur-capital",
+        "eisenheim-2"
+      ]
+    },
+    {
+      "id": "eisenheim-2",
+      "name": "노른성",
+      "countryId": "eisenheim",
+      "countryName": "아이젠하임 제국",
+      "tier": 5,
+      "x": 76.25,
+      "y": 30,
+      "isCapital": false,
+      "isPlayerHome": false,
+      "owner": "enemy",
+      "connections": [
+        "eisenheim-capital"
+      ]
+    }
+  ],
+  "updatedAt": 1791879699402
+}
